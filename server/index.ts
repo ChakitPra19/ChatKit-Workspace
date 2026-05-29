@@ -1,6 +1,8 @@
 import express from "express"; // Framework ช่วยให้สร้าง api ง่ายขึ้น
 import cors from "cors"; // ใช้เพื่อให้ Frontend เข้าถึง Backend ได้
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+import authRouters from "./routes/auth";
 
 dotenv.config();
 
@@ -9,6 +11,19 @@ const PORT = process.env.PORT || 5001;
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", authRouters);
+
+const connectDB = async () => {
+    try {
+        const conn = await mongoose.connect(process.env.MONGO_URL as string)
+        console.log(`Mongo Already Connected to : ${conn.connection.host}`)
+    } catch (error) {
+        console.log(`Error :`, error)
+        process.exit(1);
+    }
+};
+
+connectDB();
 
 app.get("/", (req, res) => {
     res.send("Server Available!");
