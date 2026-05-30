@@ -3,6 +3,7 @@ import cors from "cors"; // ใช้เพื่อให้ Frontend เข้
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import authRouters from "./routes/auth";
+import roomRouters from "./routes/room";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 5001;
 app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRouters);
+app.use("/api/rooms", roomRouters);
 
 const connectDB = async () => {
     try {

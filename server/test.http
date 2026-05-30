@@ -16,3 +16,18 @@ Content-Type: application/json
     "email": "testuser01@gmail.com",
     "password": "password123"
 }
+
+## Create Room ##
+POST http://localhost:5001/api/rooms
+Content-Type: application/json
+Authorization: Bearer ----
+
+{
+    "name": "Chatting Room",
+    "description": "This is a chatting room." 
+}
+
+## Get Rooms ##
+GET http://localhost:5001/api/rooms
+Content-Type: application/json
+Authorization: Bearer ----
