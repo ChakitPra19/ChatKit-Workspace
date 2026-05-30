@@ -31,3 +31,18 @@ Authorization: Bearer ----
 GET http://localhost:5001/api/rooms
 Content-Type: application/json
 Authorization: Bearer ----
+
+## Sent message in room ##
+POST http://localhost:5001/api/messages
+Content-Type: application/json
+Authorization: Bearer ----
+
+{
+    "roomId": "",
+    "content": "Hello Test Message"
+}
+
+## Fetch Messages ##
+GET  http://localhost:5001/api/messages/----
+Content-Type: application/json
+Authorization: Bearer ----

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import authRouters from "./routes/auth";
 import roomRouters from "./routes/room";
+import messageRouters from "./routes/message";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/auth", authRouters);
 app.use("/api/rooms", roomRouters);
+app.use("/api/messages", messageRouters);
 
 const connectDB = async () => {
     try {
