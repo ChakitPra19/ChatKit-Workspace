@@ -2,6 +2,9 @@ import express from "express"; // Framework ช่วยให้สร้าง
 import cors from "cors"; // ใช้เพื่อให้ Frontend เข้าถึง Backend ได้
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import http from "http";
+import { Server } from "socket.io";
+
 import authRouters from "./routes/auth";
 import roomRouters from "./routes/room";
 import messageRouters from "./routes/message";
@@ -10,6 +13,15 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"],
+    },
+});
 
 app.use(cors());
 app.use(express.json());
@@ -29,10 +41,18 @@ const connectDB = async () => {
 
 connectDB();
 
+io.on("connection", (socket) => {
+    console.log(`Connect to Socket Succussfully(ID: ${socket.id})`);
+
+    socket.on("disconnect", () => {
+        console.log(`User Disconnect(ID: ${socket.id})`);
+    });
+});
+
 app.get("/", (req, res) => {
     res.send("Server Available!");
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
