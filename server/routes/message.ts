@@ -24,7 +24,7 @@ router.post("/", protect, async (req: AuthRequest, res: Express.Response): Promi
 
 router.get("/:roomId", protect, async (req: AuthRequest, res: Express.Response): Promise<any> => {
     try {
-        const messages = await Message.find({ room: req.params.roomId }).populate("sender", "username avater").sort({ createdAt: 1 });
+        const messages = await Message.find({ room: req.params.roomId }).populate("sender", "username avatar").sort({ createdAt: 1 });
         res.json(messages);
     } catch (error) {
         console.log(error);

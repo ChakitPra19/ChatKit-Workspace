@@ -5,10 +5,18 @@ import { io } from "socket.io-client"
 
 export default function Home() {
   useEffect(() => {
-    const socket = io("http://localhost:5001");
+    const socket = io("http://localhost:5001", {
+      auth: {
+        token: ""
+      }
+    });
 
     socket.on("connect", () => {
       console.log(`Connect to Socket.io Successfully, ID: ${socket.id}`);
+    });
+
+    socket.on("connect_error", (err) => {
+      console.log(`Connection Error: ${err.message}`);
     });
 
     return () => {

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import http from "http";
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
 
 import authRouters from "./routes/auth";
 import roomRouters from "./routes/room";
@@ -41,8 +42,25 @@ const connectDB = async () => {
 
 connectDB();
 
+io.use((socket, next) => {
+    try {
+        const token = socket.handshake.auth.token;
+
+        if (!token) {
+            return next(new Error("Authentication error: No token"))
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
+        socket.data.user = decoded;
+
+        next();
+    } catch (error) {
+        next(new Error("Authentication error: Invalid token"));
+    }
+});
+
 io.on("connection", (socket) => {
-    console.log(`Connect to Socket Succussfully(ID: ${socket.id})`);
+    console.log(`Connect to Socket Successfully(User ID: ${socket.data.user.id}, Socket ID: ${socket.id})`);
 
     socket.on("disconnect", () => {
         console.log(`User Disconnect(ID: ${socket.id})`);
