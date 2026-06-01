@@ -62,6 +62,16 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
     console.log(`Connect to Socket Successfully(User ID: ${socket.data.user.id}, Socket ID: ${socket.id})`);
 
+    socket.on("join_room", (roomId) => {
+        socket.join(roomId);
+
+        console.log(`User ${socket.data.user.id} join the room ${roomId}.`);
+    })
+
+    socket.on("send_message", (data) => {
+        socket.to(data.roomId).emit("message_received", data.message);
+    });
+
     socket.on("disconnect", () => {
         console.log(`User Disconnect(ID: ${socket.id})`);
     });
