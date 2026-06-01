@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import axios from "axios";
 
@@ -16,6 +16,9 @@ export default function ChatRoom() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
+  const [typingUser, setTypingUser] = useState<string | null>(null);
+
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const newSocket = io("http://localhost:5001", {
@@ -35,10 +38,34 @@ export default function ChatRoom() {
       setMessages((prev) => [...prev, incomingMessage]);
     });
 
+    newSocket.on("user_typing", (username) => {
+      setTypingUser(username);
+    });
+
+    newSocket.on("user_stop_typing", () => {
+      setTypingUser(null);
+    });
+
     return () => {
       newSocket.disconnect()
     };
   }, []);
+
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputText(e.target.value);
+
+    if (socket) {
+      socket.emit("typing", ROOM_ID);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    };
+
+    typingTimeoutRef.current = setTimeout(() => {
+      socket.emit("stop_typing", ROOM_ID);
+    }, 2000);
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,11 +101,19 @@ export default function ChatRoom() {
         </div>
       ))}
 
+      {typingUser && (
+        <div className="flex justify-start">
+          <div className="bg-gray-100 text-gray-500 text-sm p-2 rounded-xl italic">
+            {typingUser} กำลังพิมพ์...
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSendMessage}>
         <input
           type="text"
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)} />
+          onChange={handleTyping} />
         <button type="submit">Send</button>
       </form>
     </div>

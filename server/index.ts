@@ -72,6 +72,14 @@ io.on("connection", (socket) => {
         socket.to(data.roomId).emit("message_received", data.message);
     });
 
+    socket.on("typing", (roomId) => {
+        socket.to(roomId).emit("user_typing", socket.data.user.username);
+    });
+
+    socket.on("stop_typing", (roomId) => {
+        socket.to(roomId).emit("user_stop_typing");
+    })
+
     socket.on("disconnect", () => {
         console.log(`User Disconnect(ID: ${socket.id})`);
     });
