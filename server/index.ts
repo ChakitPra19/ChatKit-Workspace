@@ -2,6 +2,7 @@ import express from "express"; // Framework ช่วยให้สร้าง
 import cors from "cors"; // ใช้เพื่อให้ Frontend เข้าถึง Backend ได้
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import Redis from "ioredis";
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
@@ -22,6 +23,12 @@ const io = new Server(server, {
         origin: "http://localhost:3000",
         methods: ["GET", "POST"],
     },
+});
+
+const redis = new Redis();
+
+redis.on("connect", () => {
+    console.log("Redis Connected!");
 });
 
 app.use(cors());
@@ -59,8 +66,15 @@ io.use((socket, next) => {
     }
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
     console.log(`Connect to Socket Successfully(User ID: ${socket.data.user.id}, Socket ID: ${socket.id})`);
+
+    const username = socket.data.user.username;
+
+    await redis.sadd("online_users", username);
+
+    const currentOnlineUsers = await redis.smembers("online_users");
+    io.emit("update_online_users", currentOnlineUsers);
 
     socket.on("join_room", (roomId) => {
         socket.join(roomId);
@@ -80,7 +94,13 @@ io.on("connection", (socket) => {
         socket.to(roomId).emit("user_stop_typing");
     })
 
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
+
+        await redis.srem("online_users", username);
+        const updatedUsers = await redis.smembers("online_users");
+
+        io.emit("update_online_users", updatedUsers);
+
         console.log(`User Disconnect(ID: ${socket.id})`);
     });
 });

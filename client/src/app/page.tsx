@@ -17,6 +17,7 @@ export default function ChatRoom() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [typingUser, setTypingUser] = useState<string | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<String[]>([]);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -44,6 +45,10 @@ export default function ChatRoom() {
 
     newSocket.on("user_stop_typing", () => {
       setTypingUser(null);
+    });
+
+    newSocket.on("update_online_users", (usersArray) => {
+      setOnlineUsers(usersArray);
     });
 
     return () => {
@@ -108,6 +113,13 @@ export default function ChatRoom() {
           </div>
         </div>
       )}
+
+      <span>Online User</span>
+      {onlineUsers.map((user, idx) => (
+        <div key={idx}>
+          <span className="text-green-500">{user}</span>
+        </div>
+      ))}
 
       <form onSubmit={handleSendMessage}>
         <input
