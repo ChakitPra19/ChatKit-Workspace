@@ -7,19 +7,28 @@ const MY_TOKEN = "";
 const ROOM_ID = "";
 
 interface Message {
-  _id: string,
+  _id: string;
   content: string;
   sender: { _id: string, username: string };
+  messageType?: string;
 }
 
 export default function ChatRoom() {
   const [socket, setSocket] = useState<Socket | null>(null);
+
+  // Typing Section
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [typingUser, setTypingUser] = useState<string | null>(null);
   const [onlineUsers, setOnlineUsers] = useState<String[]>([]);
 
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Uploading Section
+  const [isUploading, setIsUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     const newSocket = io("http://localhost:5001", {
@@ -56,6 +65,8 @@ export default function ChatRoom() {
     };
   }, []);
 
+  // Handle Section
+  // Typing
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
 
@@ -87,7 +98,15 @@ export default function ChatRoom() {
     setInputText("");
 
     try {
-      const res = await axios.post("http://localhost:5001/api/messages", { roomId: ROOM_ID, content: tempMessage.content }, { headers: { Authorization: `Bearer ${MY_TOKEN}` } });
+      const res = await axios.post("http://localhost:5001/api/messages", {
+        roomId: ROOM_ID,
+        content: tempMessage.content
+      },
+        {
+          headers: {
+            Authorization: `Bearer ${MY_TOKEN}`
+          }
+        });
       socket?.emit("send_message", {
         roomId: ROOM_ID,
         message: res.data
@@ -97,12 +116,56 @@ export default function ChatRoom() {
     }
   };
 
+  // Uploading
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    setIsUploading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const uploadRes = await axios.post("http://localhost:5001/api/upload", formData, {
+        headers: {
+          Authorization: `Bearer ${MY_TOKEN}`,
+          "Content-Type": "multipart/form-data",
+        }
+      });
+
+      const imageUrl = uploadRes.data.url;
+      const msgRes = await axios.post("http://localhost:5001/api/messages", {
+        roomId: ROOM_ID,
+        content: imageUrl,
+        messageType: "image",
+      }, { headers: { Authorization: `Bearer ${MY_TOKEN}` } });
+
+      socket?.emit("send_message", {
+        roomId: ROOM_ID,
+        message: msgRes.data,
+      });
+
+      setMessages((prev) => [...prev, msgRes.data]);
+
+    } catch (error) {
+      console.error("Failed to upload file:", error)
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div>
       {messages.map((msg) => (
         <div key={msg._id}>
           <h1 className="text-red-500">{msg.sender.username}</h1>
-          <p className="text-black">{msg.content}</p>
+          {msg.messageType === "image" ? (
+            <img src={msg.content} alt="รูปแชท" className="rounded-lg max-w-sm mt-1" />
+          ) : (
+            <p>{msg.content}</p>
+          )}
         </div>
       ))}
 
@@ -121,6 +184,23 @@ export default function ChatRoom() {
         </div>
       ))}
 
+      <form onSubmit={handleSendMessage} className="...">
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="p-2 text-xl hover:bg-gray-200 rounded-full"
+        >
+          {isUploading ? "⏳" : "📷"}
+        </button>
+      </form>
       <form onSubmit={handleSendMessage}>
         <input
           type="text"

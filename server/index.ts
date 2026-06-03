@@ -6,10 +6,12 @@ import Redis from "ioredis";
 import http from "http";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
+import path from "path";
 
 import authRouters from "./routes/auth";
 import roomRouters from "./routes/room";
 import messageRouters from "./routes/message";
+import uploadRouters from "./routes/upload";
 
 dotenv.config();
 
@@ -36,6 +38,9 @@ app.use(express.json());
 app.use("/api/auth", authRouters);
 app.use("/api/rooms", roomRouters);
 app.use("/api/messages", messageRouters);
+app.use("/api/upload", uploadRouters);
+
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads"))); //เปิดเป็น public ตอน front-end ขอ //process.cwd() คือ current folder ที่ run
 
 const connectDB = async () => {
     try {

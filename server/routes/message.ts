@@ -6,12 +6,13 @@ const router = Express.Router();
 
 router.post("/", protect, async (req: AuthRequest, res: Express.Response): Promise<any> => {
     try {
-        const { roomId, content } = req.body;
+        const { roomId, content, messageType } = req.body;
 
         const newMessage = await Message.create({
             sender: req.user.id,
             room: roomId,
             content: content,
+            messageType: messageType || "text",
         });
 
         const fullMessage = await Message.findById(newMessage).populate("sender", "username avatar");
