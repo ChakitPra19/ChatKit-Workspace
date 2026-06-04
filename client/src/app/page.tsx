@@ -29,6 +29,10 @@ export default function ChatRoom() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Note Section
+  const [noteContent, setNoteContent] = useState("");
+
+  const saveNoteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const newSocket = io("http://localhost:5001", {
@@ -38,7 +42,15 @@ export default function ChatRoom() {
     setSocket(newSocket);
     axios.get(`http://localhost:5001/api/messages/${ROOM_ID}`, {
       headers: { Authorization: `Bearer ${MY_TOKEN}` }
-    }).then((res) => setMessages(res.data)).catch((err) => console.log("Fetch Messages Error:", err));
+    })
+      .then((res) => setMessages(res.data))
+      .catch((err) => console.log("Fetch Messages Error:", err));
+
+    axios.get(`http://localhost:5001/api/notes/${ROOM_ID}`, {
+      headers: { Authorization: `Bearer ${MY_TOKEN}` }
+    })
+      .then((res) => setNoteContent(res.data.content))
+      .catch((err) => console.log("Fetch note fail: ", err));
 
     newSocket.on("connect", () => {
       newSocket.emit("join_room", ROOM_ID);
@@ -60,6 +72,10 @@ export default function ChatRoom() {
       setOnlineUsers(usersArray);
     });
 
+    newSocket.on("note_updated", (newContent) => {
+      setNoteContent(newContent);
+    })
+
     return () => {
       newSocket.disconnect()
     };
@@ -79,7 +95,7 @@ export default function ChatRoom() {
     };
 
     typingTimeoutRef.current = setTimeout(() => {
-      socket.emit("stop_typing", ROOM_ID);
+      socket?.emit("stop_typing", ROOM_ID);
     }, 2000);
   };
 
@@ -156,6 +172,29 @@ export default function ChatRoom() {
     }
   };
 
+  // Note
+  const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setNoteContent(text);
+
+    if (socket) {
+      socket.emit("update_note", { roomId: ROOM_ID, content: text });
+    }
+
+    if (saveNoteTimeoutRef.current) {
+      clearTimeout(saveNoteTimeoutRef.current);
+    }
+
+    saveNoteTimeoutRef.current = setTimeout(async () => {
+      try {
+        await axios.put(`http://localhost:5001/api/notes/${ROOM_ID}`, { content: text }, { headers: { Authorization: `Bearer ${MY_TOKEN}` } })
+        console.log("Note Saved")
+      } catch (error) {
+        console.log("Save note unsuccessful!")
+      }
+    }, 1500)
+  }
+
   return (
     <div>
       {messages.map((msg) => (
@@ -208,6 +247,13 @@ export default function ChatRoom() {
           onChange={handleTyping} />
         <button type="submit">Send</button>
       </form>
+
+      <textarea
+        className="flex-1 w-full p-8 text-lg text-gray-800 outline-none resize-none bg-transparent"
+        placeholder="ลองพิมพ์ดู"
+        value={noteContent}
+        onChange={handleNoteChange}
+      />
     </div>
   )
 };

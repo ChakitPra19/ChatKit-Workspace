@@ -1,10 +1,10 @@
-import Express from "express";
+import express from "express";
 import Message from "../models/Message";
 import { protect, type AuthRequest } from "../middleware/authMiddleware";
 
-const router = Express.Router();
+const router = express.Router();
 
-router.post("/", protect, async (req: AuthRequest, res: Express.Response): Promise<any> => {
+router.post("/", protect, async (req: AuthRequest, res: express.Response): Promise<any> => {
     try {
         const { roomId, content, messageType } = req.body;
 
@@ -23,7 +23,7 @@ router.post("/", protect, async (req: AuthRequest, res: Express.Response): Promi
     }
 });
 
-router.get("/:roomId", protect, async (req: AuthRequest, res: Express.Response): Promise<any> => {
+router.get("/:roomId", protect, async (req: AuthRequest, res: express.Response): Promise<any> => {
     try {
         const messages = await Message.find({ room: req.params.roomId }).populate("sender", "username avatar").sort({ createdAt: 1 });
         res.json(messages);

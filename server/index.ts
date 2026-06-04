@@ -12,6 +12,7 @@ import authRouters from "./routes/auth";
 import roomRouters from "./routes/room";
 import messageRouters from "./routes/message";
 import uploadRouters from "./routes/upload";
+import noteRouters from "./routes/note"
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use("/api/auth", authRouters);
 app.use("/api/rooms", roomRouters);
 app.use("/api/messages", messageRouters);
 app.use("/api/upload", uploadRouters);
+app.use("/api/notes", noteRouters);
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads"))); //เปิดเป็น public ตอน front-end ขอ //process.cwd() คือ current folder ที่ run
 
@@ -87,6 +89,7 @@ io.on("connection", async (socket) => {
         console.log(`User ${socket.data.user.id} join the room ${roomId}.`);
     })
 
+    // Message
     socket.on("send_message", (data) => {
         socket.to(data.roomId).emit("message_received", data.message);
     });
@@ -97,6 +100,11 @@ io.on("connection", async (socket) => {
 
     socket.on("stop_typing", (roomId) => {
         socket.to(roomId).emit("user_stop_typing");
+    })
+
+    // Note
+    socket.on("update_note", (data) => {
+        socket.to(data.roomId).emit("note_updated", data.content);
     })
 
     socket.on("disconnect", async () => {
