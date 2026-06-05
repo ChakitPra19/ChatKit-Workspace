@@ -107,6 +107,16 @@ io.on("connection", async (socket) => {
         socket.to(data.roomId).emit("note_updated", data.content);
     })
 
+    // Mouse
+    socket.on("mouse_move", (data) => {
+        socket.to(data.roomId).emit("cursor_moved", {
+            socketId: socket.id,
+            username: socket.data.user.username,
+            x: data.x,
+            y: data.y,
+        });
+    })
+
     socket.on("disconnect", async () => {
 
         await redis.srem("online_users", username);

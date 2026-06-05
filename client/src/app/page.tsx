@@ -34,6 +34,17 @@ export default function ChatRoom() {
 
   const saveNoteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Cursor Mouse Section
+  const [cursors, setCursors] = useState<{
+    [socketId: string]: {
+      x: number,
+      y: number,
+      username: string
+    }
+  }>({});
+
+  const lastMouseMoveTime = useRef<number>(0);
+
   useEffect(() => {
     const newSocket = io("http://localhost:5001", {
       auth: { token: MY_TOKEN }
@@ -76,13 +87,20 @@ export default function ChatRoom() {
       setNoteContent(newContent);
     })
 
+    newSocket.on("cursor_moved", (data) => {
+      setCursors(prev => ({
+        ...prev,
+        [data.socketId]: { x: data.x, y: data.y, username: data.username }
+      }));
+    })
+
     return () => {
       newSocket.disconnect()
     };
   }, []);
 
   // Handle Section
-  // Typing
+  // Message Handle
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputText(e.target.value);
 
@@ -132,7 +150,7 @@ export default function ChatRoom() {
     }
   };
 
-  // Uploading
+  // File Handle
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
@@ -172,7 +190,7 @@ export default function ChatRoom() {
     }
   };
 
-  // Note
+  // Note Handle
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     setNoteContent(text);
@@ -194,6 +212,27 @@ export default function ChatRoom() {
       }
     }, 1500)
   }
+
+  // Mouse Handle
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!socket) return;
+
+    const now = Date.now();
+    if (now - lastMouseMoveTime.current < 50) return;
+
+    lastMouseMoveTime.current = now;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    socket.emit("mouse_move", {
+      roomId: ROOM_ID,
+      x,
+      y,
+    });
+  }
+
 
   return (
     <div>
@@ -248,12 +287,32 @@ export default function ChatRoom() {
         <button type="submit">Send</button>
       </form>
 
-      <textarea
-        className="flex-1 w-full p-8 text-lg text-gray-800 outline-none resize-none bg-transparent"
-        placeholder="ลองพิมพ์ดู"
-        value={noteContent}
-        onChange={handleNoteChange}
-      />
+      <div
+        className="w-2/3 flex flex-col bg-white relative overflow-hidden"
+        onMouseMove={handleMouseMove}
+      >
+        <textarea
+          className="flex-1 w-full p-8 text-lg text-gray-800 outline-none resize-none bg-transparent"
+          placeholder="ลองพิมพ์ดู"
+          value={noteContent}
+          onChange={handleNoteChange}
+        />
+        {Object.entries(cursors).map(([id, pos]) => (
+          <div
+            key={id}
+            className="bg-blue-500 absolute w-3 h-3 rounded-full"
+            style={{
+              left: `${pos.x}px`,
+              top: `${pos.y}px`,
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            <span className="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-md ml-4 -mt-2">
+              {pos.username}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 };
