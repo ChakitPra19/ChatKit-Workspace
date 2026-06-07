@@ -9,10 +9,10 @@ router.post("/register", async (req, res): Promise<any> => {
     try {
         const { username, email, password } = req.body;
 
-        const userExists = await User.findOne({ email });
+        const userExists = await User.findOne({ $or: [{ email }, { username }] });
 
         if (userExists) {
-            return res.status(400).json({ message: "This Email already existed." });
+            return res.status(400).json({ message: "This Email or Username already existed." });
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -41,9 +41,9 @@ router.post("/register", async (req, res): Promise<any> => {
 
 router.post("/login", async (req, res): Promise<any> => {
     try {
-        const { email, password } = req.body;
+        const { identifier, password } = req.body;
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
 
         if (!user) {
             return res.status(400).json({ message: "Invalid User" });
